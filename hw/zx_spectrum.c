@@ -518,6 +518,7 @@ static void zx_spectrum_common_init(ram_addr_t ram_size,
         if (is_128k) {
             if ((libspectrum_machine_capabilities(libspectrum_snap_machine(snap) &
                  LIBSPECTRUM_MACHINE_CAPABILITY_128_MEMORY))) {
+                int pagebyte;
                 /* restore paging state */
                 pagebyte = libspectrum_snap_out_128_memoryport(snap);
                 page_tab[0] = 8 + !!(pagebyte & 0x10);
