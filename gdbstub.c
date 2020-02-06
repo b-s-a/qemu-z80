@@ -1298,64 +1298,113 @@ static int cpu_gdb_write_register(CPUState *env, uint8_t *mem_buf, int n)
 }
 #elif defined (TARGET_Z80)
 
-#define NUM_CORE_REGS CPU_NB_REGS // 15 ver CPU_NB_REGS en cpu.h
+/* The order of registers permit keep partially same code for:
+  Z80, i8080, and GBZ80 */
+#define GDB_R_AF    0
+#define GDB_R_BC    1
+#define GDB_R_DE    2
+#define GDB_R_HL    3
+#define GDB_R_SP    4
+#define GDB_R_PC    5
+#define GDB_R_IX    6
+#define GDB_R_IY    7
+#define GDB_R_AFX   8
+#define GDB_R_BCX   9
+#define GDB_R_DEX   10
+#define GDB_R_HLX   11
+#define GDB_R_IR    12
+
+#define NUM_CORE_REGS 13
 
 static int cpu_gdb_read_register(CPUState *env, uint8_t *mem_buf, int n)
 {
-#ifdef DEBUG_GDB
-    // printf("LLL: cpu_gdb_read_register: %d\n", n);
-#endif
-  switch (n)
-      {
-      case R_A:
-      case R_F:
-      case R_I:
-      case R_R:
-      case R_AX:
-      case R_FX:
-          // printf("%d | getreg8\n", n);
-          GET_REG8(env->regs[n]);
-          return 1;
-      case R_PC:
-          // printf("%s about to read PC: %x \n", __PRETTY_FUNCTION__, env->pc);
-          GET_REG16(env->pc);
-          return 2;
-      default:
-          // printf("%d | getreg16\n", n);
-          GET_REG16(env->regs[n]);
-          return 2; // es 2
+    unsigned tmp;
+    switch (n)
+	{
+	case GDB_R_AF:
+	    tmp = env->regs[R_A] * 0x100 + env->regs[R_F];
+	    GET_REG16(tmp);
+	case GDB_R_BC:
+	    GET_REG16(env->regs[R_BC]);
+	case GDB_R_DE:
+	    GET_REG16(env->regs[R_DE]);
+	case GDB_R_HL:
+	    GET_REG16(env->regs[R_HL]);
+	case GDB_R_AFX:
+	    tmp = env->regs[R_AX] * 0x100 + env->regs[R_FX];
+	    GET_REG16(tmp);
+	case GDB_R_BCX:
+	    GET_REG16(env->regs[R_BCX]);
+	case GDB_R_DEX:
+	    GET_REG16(env->regs[R_DEX]);
+	case GDB_R_HLX:
+	    GET_REG16(env->regs[R_HLX]);
+	case GDB_R_IX:
+	    GET_REG16(env->regs[R_IX]);
+	case GDB_R_IY:
+	    GET_REG16(env->regs[R_IY]);
+	case GDB_R_SP:
+	    GET_REG16(env->regs[R_SP]);
+	case GDB_R_IR:
+	    tmp = env->regs[R_I] * 0x100 + env->regs[R_R];
+	    GET_REG16(tmp);
+      case GDB_R_PC:
+	    GET_REG16(env->pc);
       }
+    return 0;
 }
 
 static int cpu_gdb_write_register(CPUState *env, uint8_t *mem_buf, int n)
 {
-#ifdef DEBUG_GDB
-    // printf("cpu_gdb_write_register: %d\n", n);
-#endif
     uint32_t tmp;
-
     tmp = ldl_p(mem_buf);
 
     switch (n)
-      {
-      case R_A:
-      case R_F:
-      case R_I:
-      case R_R:
-      case R_AX:
-      case R_FX:
-          // printf("%d | writereg8\n", n);
-          env->regs[n]=tmp;
-          return 1;
-      case R_PC:
-          // printf("%s about to change PC: %x -> %x \n", __PRETTY_FUNCTION__, env->pc, tmp);
-          env->pc=tmp;
-          return 2;
-      default:
-          // printf("%d | writereg16\n", n);
-          env->regs[n]=tmp;
-          return 2; // es 2
-      }
+	{
+	case GDB_R_AF:
+	    env->regs[R_A] = (tmp >> 8) & 0xff;
+	    env->regs[R_F] = (tmp >> 0) & 0xff;
+	    break;
+	case GDB_R_BC:
+	    env->regs[R_BC] = tmp;
+	    break;
+	case GDB_R_DE:
+	    env->regs[R_DE] = tmp;
+	    break;
+	case GDB_R_HL:
+	    env->regs[R_HL] = tmp;
+	    break;
+	case GDB_R_SP:
+	    env->regs[R_SP] = tmp;
+	    break;
+	case GDB_R_PC:
+	    env->pc = tmp;
+	    break;
+	case GDB_R_AFX:
+	    env->regs[R_AX] = (tmp >> 8) & 0xff;
+	    env->regs[R_FX] = (tmp >> 0) & 0xff;
+	    break;
+	case GDB_R_BCX:
+	    env->regs[R_BCX] = tmp;
+	    break;
+	case GDB_R_DEX:
+	    env->regs[R_DEX] = tmp;
+	    break;
+	case GDB_R_HLX:
+	    env->regs[R_HLX] = tmp;
+	    break;
+	case GDB_R_IX:
+	    env->regs[R_IX] = tmp;
+	    break;
+	case GDB_R_IY:
+	    env->regs[R_IY] = tmp;
+	    break;
+	case GDB_R_IR:
+	    env->regs[R_I] = (tmp >> 8) & 0xff;
+	    env->regs[R_R] = (tmp >> 0) & 0xff;
+	    break;
+    }
+    return 2;
 }
 #else
 
